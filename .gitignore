@@ -1,0 +1,10 @@
+.codebuddy/
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+backend/data/
+backend/.env
+.env
+.DS_Store

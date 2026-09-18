@@ -1,0 +1,7 @@
+{
+  "name": "time_plugin",
+  "description": "获取当前日期时间与时间戳的示例插件",
+  "version": "1.0.0",
+  "entry": "entry.py",
+  "enabled_default": true
+}
