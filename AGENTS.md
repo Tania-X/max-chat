@@ -14,3 +14,8 @@ Every push/PR runs: backend compile check, frontend build, gitleaks credential s
 
 ## Docs
 In examples use placeholder paths (`<PROJECT_ROOT>`) or env-var paths (`$env:VENV_HOME`) — never real local paths or personal info.
+
+## PR checklist
+- Contract alignment: every PR must verify frontend/backend contracts stay in sync — REST schemas, SSE event shapes (`chunk`/`tool_call`/`tool_result`/`done`/`error`), error format (`{detail, code}`). Any contract change updates both sides in the same PR.
+- Env sync: new config keys land in `config.py`, `.env.example` and `docker-compose.yml` together.
+- DB schema: breaking ORM changes must note migration steps for persisted SQLite data.
