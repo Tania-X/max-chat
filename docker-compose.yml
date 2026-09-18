@@ -1,0 +1,16 @@
+services:
+  max-chat:
+    build: .
+    image: max-chat:latest
+    container_name: max-chat
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - max-chat-data:/app/data
+    restart: unless-stopped
+    mem_limit: 1g
+
+volumes:
+  max-chat-data:

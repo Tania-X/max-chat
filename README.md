@@ -34,6 +34,16 @@ frontend/                # React 18 + Vite 5 + TS + Tailwind
   src/components/        # 侧栏、消息列表、输入区、Trace 面板、设置 Tab
 ```
 
+## Docker 快速启动（推荐）
+
+单容器多阶段构建：Node 构建前端 → Python 托管 API 与静态页面；SQLite 持久化在命名卷。
+
+```bash
+cp backend/.env.example backend/.env   # 编辑填入模型 Key
+docker compose up -d --build
+# 访问 http://<服务器IP>:8000
+```
+
 ## 启动方式
 
 ### 后端
