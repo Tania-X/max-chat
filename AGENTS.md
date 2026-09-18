@@ -3,6 +3,9 @@
 ## Project
 MAX Chat: FastAPI + Google ADK (DDD) backend `backend/`; React + Vite + Tailwind frontend `frontend/`.
 
+## Business
+MAX Chat is a ChatGPT-style multi-user AI assistant (chat, memory, tools, multi-model, observability). Changes must serve this core, stay local-first and zero-dependency; reject out-of-scope features. See README for scope.
+
 ## Git
 - Check branch before ANY git mutation. After init: changes land via PR only, never direct to main.
 - Branches: create only, never delete; merge commits, no squash.
