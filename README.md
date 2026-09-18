@@ -15,6 +15,21 @@
 | MCP | 作为 MCP Client 接入外部 server（stdio / sse），工具自动发现注入，失败降级 |
 | 可观测性 | 每条回复记录 TTFT、tok/s、prompt/completion tokens、成本折算；Trace 瀑布图 + 用量统计图表 |
 
+## 业务定位与扩展点
+
+MAX Chat 是类 ChatGPT 的多用户 AI 助手，核心业务域为：**对话体验、Agent 能力（记忆 / 画像 / 工具）、多模型接入、调用可观测性**。与核心域无关的功能（支付、社交流、内容运营等）不在本项目范围内；默认保持本地优先、零外部依赖（SQLite 即可运行）。
+
+现阶段扩展点：
+
+| 扩展点 | 方式 |
+|---|---|
+| 新模型提供商 | LiteLLM 适配，设置页配置即用 |
+| 插件 | `backend/plugins/`，Python 函数自动转 FunctionTool |
+| 技能 | `backend/skills/`，指令模板 + 可选工具集 |
+| MCP 工具 | 设置页接入 stdio / sse server |
+| 模型定价表 | `observability/infrastructure/pricing.py` |
+| 新业务能力 | 按 DDD 新增限界上下文（domain/application/infrastructure/interfaces） |
+
 ## 目录结构
 
 ```
