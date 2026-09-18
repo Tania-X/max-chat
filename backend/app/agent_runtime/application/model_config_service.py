@@ -32,10 +32,12 @@ class ModelConfigService:
         for field in ("provider", "model_name", "base_url", "label"):
             if field in data and data[field] is not None:
                 setattr(config, field, data[field])
+        if not config.label:
+            config.label = f"{config.provider}/{config.model_name}"
         if data.get("api_key"):
             config.api_key = data["api_key"]
-        if data.get("is_default"):
-            config.is_default = True
+        if "is_default" in data and data["is_default"] is not None:
+            config.is_default = bool(data["is_default"])
         return await self.repo.save(config)
 
     async def delete(self, user_id: str, config_id: str) -> None:
