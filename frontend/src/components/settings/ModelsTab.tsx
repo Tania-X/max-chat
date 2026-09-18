@@ -96,59 +96,68 @@ export default function ModelsTab() {
       </div>
 
       {showForm && (
-        <div className="mb-4 space-y-3 rounded-xl border border-primary/30 bg-surface-800 p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <select
-              value={form.provider}
-              onChange={(e) => setForm({ ...form, provider: e.target.value })}
-              className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
-            >
-              {PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <input
-              value={form.model_name}
-              onChange={(e) => setForm({ ...form, model_name: e.target.value })}
-              placeholder="模型名，如 gemini-2.0-flash / gpt-4o"
-              className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <input
-              value={form.api_key}
-              onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-              placeholder={editingId ? 'API Key（留空保持不变）' : 'API Key（加密存储）'}
-              type="password"
-              className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <input
-              value={form.base_url}
-              onChange={(e) => setForm({ ...form, base_url: e.target.value })}
-              placeholder="Base URL（可选）"
-              className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <label className="flex items-center gap-2 text-xs text-gray-400">
-            <input
-              type="checkbox"
-              checked={form.is_default}
-              onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
-            />
-            设为默认模型
-          </label>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={submit}
-              disabled={!form.model_name}
-              className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-xs text-white transition hover:bg-primary-dark disabled:opacity-40"
-            >
-              {editingId ? '保存修改' : '保存'}
-            </button>
-            {editingId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={resetForm}
+        >
+          <div
+            className="w-full max-w-lg space-y-3 rounded-xl border border-gray-700 bg-surface-800 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 className="text-sm font-medium text-gray-200">
+              {editingId ? '编辑模型' : '添加模型'}
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={form.provider}
+                onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
+              >
+                {PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <input
+                value={form.model_name}
+                onChange={(e) => setForm({ ...form, model_name: e.target.value })}
+                placeholder="模型名，如 gemini-2.0-flash / gpt-4o"
+                className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={form.api_key}
+                onChange={(e) => setForm({ ...form, api_key: e.target.value })}
+                placeholder={editingId ? 'API Key（留空保持不变）' : 'API Key（加密存储）'}
+                type="password"
+                className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <input
+                value={form.base_url}
+                onChange={(e) => setForm({ ...form, base_url: e.target.value })}
+                placeholder="Base URL（可选）"
+                className="rounded-lg border border-gray-700 bg-surface-900 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-gray-400">
+              <input
+                type="checkbox"
+                checked={form.is_default}
+                onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
+              />
+              设为默认模型
+            </label>
+            <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 onClick={resetForm}
                 className="cursor-pointer rounded-lg px-4 py-2 text-xs text-gray-400 transition hover:bg-surface-700"
               >
-                取消编辑
+                取消
               </button>
-            )}
+              <button
+                onClick={submit}
+                disabled={!form.model_name}
+                className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-xs text-white transition hover:bg-primary-dark disabled:opacity-40"
+              >
+                {editingId ? '保存修改' : '保存'}
+              </button>
+            </div>
           </div>
         </div>
       )}
