@@ -11,3 +11,6 @@ MAX Chat: FastAPI + Google ADK (DDD) backend in `backend/`; React + Vite + Tailw
 
 ## CI gates
 Every push/PR runs: backend compile check, frontend build, gitleaks credential scan, commit-message lint. All must pass.
+
+## Docs
+In examples use placeholder paths (`<PROJECT_ROOT>`) or env-var paths (`$env:VENV_HOME`) — never real local paths or personal info.
