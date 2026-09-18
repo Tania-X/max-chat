@@ -13,7 +13,7 @@ MAX Chat is a ChatGPT-style multi-user AI assistant (chat, memory, tools, multi-
 
 ## PR checklist
 - Contracts: REST schemas, SSE event shapes, error format `{detail, code}` synced both sides.
-- Env: new keys → `config.py` + `.env.example` + `docker-compose.yml`.
+- Env: new keys → `config.py` (Field description) only; regenerate `.env.example` via `python -m app.shared.env_example` (CI enforces). Compose injects whole `.env` — no per-key edits.
 - DB: breaking ORM changes need migration notes.
 - CI (backend compile, frontend build, gitleaks, commit-lint) must pass.
 
