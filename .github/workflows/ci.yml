@@ -17,6 +17,8 @@ jobs:
         run: pip install -r backend/requirements.txt
       - name: Compile check
         run: python -m compileall -q backend/app
+      - name: Check .env.example freshness
+        run: cd backend && python -m app.shared.env_example --check
 
   frontend-build:
     runs-on: ubuntu-latest
