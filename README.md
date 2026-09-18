@@ -39,9 +39,11 @@ frontend/                # React 18 + Vite 5 + TS + Tailwind
 ### 后端
 
 ```powershell
-# 依赖已安装在 D:\dev-envs\venvs\adk-chat（也可自行重建 venv）
+# 创建虚拟环境（位置随意，示例放在项目外的环境目录）
+python -m venv $env:VENV_HOME\max-chat
+$env:VENV_HOME\max-chat\Scripts\pip.exe install -r requirements.txt
 cd backend
-D:\dev-envs\venvs\adk-chat\Scripts\python.exe -m uvicorn app.main:app --port 8000
+$env:VENV_HOME\max-chat\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
 首次启动自动建表（`backend/data/app.db`）。
