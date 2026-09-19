@@ -124,16 +124,20 @@ export default function MessageList({
             ) : (
               <span className="whitespace-pre-wrap">{m.content}</span>
             )}
-            {m.role === 'assistant' && m.stats && (
+            {m.role === 'assistant' && (m.stats || m.trace_id) && (
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-700/50 pt-2 text-[11px] text-gray-500">
-                <span>首 token {m.stats.ttft_ms ?? '-'}ms</span>
-                <span>{m.stats.tokens_per_second ?? '-'} tok/s</span>
-                <span>
-                  {(m.stats.prompt_tokens ?? 0) + (m.stats.completion_tokens ?? 0)} tokens
-                </span>
-                {m.stats.trace_id && (
+                {m.stats && (
+                  <>
+                    <span>首 token {m.stats.ttft_ms ?? '-'}ms</span>
+                    <span>{m.stats.tokens_per_second ?? '-'} tok/s</span>
+                    <span>
+                      {(m.stats.prompt_tokens ?? 0) + (m.stats.completion_tokens ?? 0)} tokens
+                    </span>
+                  </>
+                )}
+                {(m.trace_id || m.stats?.trace_id) && (
                   <button
-                    onClick={() => onShowTrace(m.stats!.trace_id!)}
+                    onClick={() => onShowTrace((m.trace_id || m.stats!.trace_id)!)}
                     className="cursor-pointer text-primary-light transition hover:text-primary"
                   >
                     查看 Trace →
