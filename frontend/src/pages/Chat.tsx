@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { streamChat } from '../api/client'
 import Composer from '../components/Composer'
@@ -12,21 +12,25 @@ export default function Chat() {
   const {
     sessions, currentSessionId, messages, models, generating,
     loadSessions, loadModels, selectSession, createSession,
-    setSessionModel, setMessages, setGenerating,
+    setSessionModel, setMessages, setGenerating, beginStream, abortStream,
   } = useChat()
   const [traceId, setTraceId] = useState<string | null>(null)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    loadSessions().then(() => {
-      const { sessions: list } = useChat.getState()
-      if (list.length > 0 && !useChat.getState().currentSessionId) {
-        selectSession(list[0].id)
-      }
-    })
-    loadModels()
+    loadSessions()
+      .then(() => {
+        const { sessions: list } = useChat.getState()
+        if (list.length > 0 && !useChat.getState().currentSessionId) {
+          selectSession(list[0].id).catch((e) => console.error('加载会话失败', e))
+        }
+      })
+      .catch((e) => console.error('加载会话列表失败', e))
+    loadModels().catch((e) => console.error('加载模型列表失败', e))
   }, [])
+
+  // 离开聊天页时中止生成，避免连接与额度在后台继续消耗
+  useEffect(() => () => useChat.getState().abortStream(), [])
 
   const currentSession = sessions.find((s) => s.id === currentSessionId)
   const currentModel =
@@ -45,10 +49,9 @@ export default function Chat() {
       id: `a-${Date.now()}`, role: 'assistant', content: '', tool_events: [], streaming: true,
     }
     setMessages([...useChat.getState().messages, userMsg, assistantMsg])
-    setGenerating(true)
 
-    const controller = new AbortController()
-    abortRef.current = controller
+    // 句柄由 store 持有：切会话/登出/离开页面时都能统一中止
+    const controller = beginStream()
 
     const patchAssistant = (patch: Partial<Message>) => {
       const list = useChat.getState().messages
@@ -81,12 +84,11 @@ export default function Chat() {
       // 无论正常结束、报错还是被中断，都不能把"正在生成"永久挂住
       patchAssistant({ streaming: false })
       setGenerating(false)
-      if (abortRef.current === controller) abortRef.current = null
     }
   }
 
   const stop = () => {
-    abortRef.current?.abort()
+    abortStream()
     setGenerating(false)
     const list = useChat.getState().messages
     const last = list[list.length - 1]
