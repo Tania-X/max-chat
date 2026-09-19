@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.shared.clock import utcnow
+
 
 @dataclass
 class Capability:
@@ -11,4 +13,4 @@ class Capability:
     description: str = ""
     enabled: bool = True
     config: dict = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)

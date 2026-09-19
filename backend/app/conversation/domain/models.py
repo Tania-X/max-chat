@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.shared.clock import utcnow
+
 
 @dataclass
 class ChatSession:
@@ -8,8 +10,8 @@ class ChatSession:
     user_id: str
     title: str = "新会话"
     model_config_id: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)
+    updated_at: datetime = field(default_factory=utcnow)
 
 
 @dataclass
@@ -21,4 +23,4 @@ class Message:
     content: str
     tool_events: list[dict] = field(default_factory=list)
     trace_id: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)

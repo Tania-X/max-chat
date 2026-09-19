@@ -1,12 +1,13 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func, select
 
 from app.observability.infrastructure.models import TraceORM
 from app.observability.infrastructure.pricing import estimate_cost
+from app.shared.clock import utcnow
 from app.shared.database import async_session_factory
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ async def get_trace(user_id: str, trace_id: str) -> dict | None:
 
 
 async def usage_summary(user_id: str, days: int = 30) -> dict:
-    since = datetime.utcnow() - timedelta(days=days)
+    since = utcnow() - timedelta(days=days)
     async with async_session_factory() as db:
         base = select(TraceORM).where(TraceORM.user_id == user_id, TraceORM.created_at >= since)
 
