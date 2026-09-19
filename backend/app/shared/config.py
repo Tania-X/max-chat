@@ -36,6 +36,10 @@ class Settings(BaseSettings):
         default=["http://localhost:5173", "http://127.0.0.1:5173"], description="允许的跨域来源"
     )
     context_message_limit: int = Field(default=50, description="注入上下文的最近消息条数")
+    allow_stdio_mcp: bool = Field(
+        default=False,
+        description="是否允许 stdio 传输的 MCP server。stdio 会以本机权限拉起任意子进程，等同于代码执行，仅在完全信任的环境下开启",
+    )
 
     @field_validator("jwt_algorithm")
     @classmethod

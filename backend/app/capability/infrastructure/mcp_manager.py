@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+from app.shared.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 MCP_TIMEOUT_SECONDS = 10
@@ -8,6 +10,14 @@ MCP_TIMEOUT_SECONDS = 10
 
 async def load_mcp_tools(name: str, config: dict) -> list:
     """连接一个 MCP server 并返回其工具集。不可达时降级为空。"""
+    transport = config.get("transport", "stdio")
+    if transport == "stdio" and not get_settings().allow_stdio_mcp:
+        # stdio 传输会以本机权限拉起任意子进程（等同代码执行），默认关闭
+        logger.warning(
+            "已跳过 stdio MCP server %r：需显式设置 ALLOW_STDIO_MCP=true 才启用", name
+        )
+        return []
+
     try:
         from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
     except ImportError:
@@ -17,7 +27,6 @@ async def load_mcp_tools(name: str, config: dict) -> list:
             logger.warning("ADK MCPToolset unavailable")
             return []
 
-    transport = config.get("transport", "stdio")
     try:
         if transport == "stdio":
             from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
