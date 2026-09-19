@@ -1,16 +1,17 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { ChevronDown, ChevronRight, Copy, User, Wrench } from 'lucide-react'
-import { useState } from 'react'
+import hljs, { resolveLanguage } from '../lib/highlight'
 import type { Message, ToolEvent } from '../types'
 
 function CodeBlock({ language, code }: { language: string; code: string }) {
   const [copied, setCopied] = useState(false)
-  const highlighted = language && hljs.getLanguage(language)
-    ? hljs.highlight(code, { language }).value
+  const resolved = resolveLanguage(language)
+  // 只对已注册语言按名高亮；highlightAuto 会遍历全部语言，代价高且易误判
+  const highlighted = resolved
+    ? hljs.highlight(code, { language: resolved }).value
     : hljs.highlightAuto(code).value
   return (
     <div className="group relative my-2">
@@ -20,7 +21,8 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
           setCopied(true)
           setTimeout(() => setCopied(false), 1500)
         }}
-        className="absolute right-2 top-2 z-10 flex cursor-pointer items-center gap-1 rounded bg-surface-700/90 px-2 py-1 text-xs text-gray-400 opacity-0 transition group-hover:opacity-100 hover:text-gray-200"
+        aria-label="复制代码"
+        className="absolute right-2 top-2 z-10 flex cursor-pointer items-center gap-1 rounded bg-surface-700/90 px-2 py-1 text-xs text-gray-400 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 hover:text-gray-200"
       >
         <Copy className="h-3 w-3" /> {copied ? '已复制' : '复制'}
       </button>
@@ -38,6 +40,7 @@ function ToolCard({ ev }: { ev: ToolEvent }) {
     <div className="my-2 rounded-lg border border-amber-500/25 bg-amber-500/5 text-xs">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-amber-300/90 transition hover:bg-amber-500/10"
       >
         {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -54,6 +57,87 @@ function ToolCard({ ev }: { ev: ToolEvent }) {
   )
 }
 
+/**
+ * 单条消息。用 memo 包住：流式输出期间每个 chunk 都会更新 messages 数组，
+ * 若不隔离，整段历史每帧都要重新解析 markdown、重新高亮所有代码块。
+ */
+const MessageRow = memo(function MessageRow({
+  message: m,
+  onShowTrace,
+}: {
+  message: Message
+  onShowTrace: (traceId: string) => void
+}) {
+  const traceId = m.trace_id || m.stats?.trace_id
+  return (
+    <div className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
+      {m.role === 'assistant' && (
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-xs text-white">
+          ✦
+        </div>
+      )}
+      <div
+        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          m.role === 'user' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'glass text-gray-200'
+        }`}
+      >
+        {m.tool_events?.map((ev, i) => <ToolCard key={i} ev={ev} />)}
+        {m.role === 'assistant' ? (
+          <div className="markdown-body">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '')
+                  const codeStr = String(children).replace(/\n$/, '')
+                  return match ? (
+                    <CodeBlock language={match[1]} code={codeStr} />
+                  ) : (
+                    <code className="rounded bg-surface-700 px-1.5 py-0.5 text-primary-light" {...props}>
+                      {children}
+                    </code>
+                  )
+                },
+              }}
+            >
+              {m.content}
+            </ReactMarkdown>
+            {m.streaming && (
+              <span className="ml-1 inline-block h-4 w-2 animate-pulse-slow rounded-sm bg-primary align-middle" />
+            )}
+          </div>
+        ) : (
+          <span className="whitespace-pre-wrap">{m.content}</span>
+        )}
+        {m.role === 'assistant' && (m.stats || traceId) && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-700/50 pt-2 text-[11px] text-gray-500">
+            {m.stats && (
+              <>
+                <span>首 token {m.stats.ttft_ms ?? '-'}ms</span>
+                <span>{m.stats.tokens_per_second ?? '-'} tok/s</span>
+                <span>{(m.stats.prompt_tokens ?? 0) + (m.stats.completion_tokens ?? 0)} tokens</span>
+              </>
+            )}
+            {traceId && (
+              <button
+                onClick={() => onShowTrace(traceId)}
+                className="cursor-pointer text-primary-light transition hover:text-primary"
+              >
+                查看 Trace →
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {m.role === 'user' && (
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-700 text-gray-400">
+          <User className="h-4 w-4" />
+        </div>
+      )}
+    </div>
+  )
+})
+
 export default function MessageList({
   messages,
   onShowTrace,
@@ -61,10 +145,23 @@ export default function MessageList({
   messages: Message[]
   onShowTrace: (traceId: string) => void
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  // 用户主动上翻时不要把他反复拽回底部
+  const stickToBottom = useRef(true)
+  const lastMessage = messages[messages.length - 1]
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (stickToBottom.current) {
+      bottomRef.current?.scrollIntoView({ block: 'end' })
+    }
+  }, [messages.length, lastMessage?.content])
 
   if (messages.length === 0) {
     return (
@@ -81,77 +178,13 @@ export default function MessageList({
   }
 
   return (
-    <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+    <div
+      ref={scrollRef}
+      onScroll={handleScroll}
+      className="flex-1 space-y-5 overflow-y-auto px-6 py-6"
+    >
       {messages.map((m) => (
-        <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-          {m.role === 'assistant' && (
-            <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-xs text-white">
-              ✦
-            </div>
-          )}
-          <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-              m.role === 'user'
-                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                : 'glass text-gray-200'
-            }`}
-          >
-            {m.tool_events?.map((ev, i) => <ToolCard key={i} ev={ev} />)}
-            {m.role === 'assistant' ? (
-              <div className="markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code({ className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      const codeStr = String(children).replace(/\n$/, '')
-                      return match ? (
-                        <CodeBlock language={match[1]} code={codeStr} />
-                      ) : (
-                        <code className="rounded bg-surface-700 px-1.5 py-0.5 text-primary-light" {...props}>
-                          {children}
-                        </code>
-                      )
-                    },
-                  }}
-                >
-                  {m.content}
-                </ReactMarkdown>
-                {m.streaming && (
-                  <span className="ml-1 inline-block h-4 w-2 animate-pulse-slow rounded-sm bg-primary align-middle" />
-                )}
-              </div>
-            ) : (
-              <span className="whitespace-pre-wrap">{m.content}</span>
-            )}
-            {m.role === 'assistant' && (m.stats || m.trace_id) && (
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-700/50 pt-2 text-[11px] text-gray-500">
-                {m.stats && (
-                  <>
-                    <span>首 token {m.stats.ttft_ms ?? '-'}ms</span>
-                    <span>{m.stats.tokens_per_second ?? '-'} tok/s</span>
-                    <span>
-                      {(m.stats.prompt_tokens ?? 0) + (m.stats.completion_tokens ?? 0)} tokens
-                    </span>
-                  </>
-                )}
-                {(m.trace_id || m.stats?.trace_id) && (
-                  <button
-                    onClick={() => onShowTrace((m.trace_id || m.stats!.trace_id)!)}
-                    className="cursor-pointer text-primary-light transition hover:text-primary"
-                  >
-                    查看 Trace →
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          {m.role === 'user' && (
-            <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-700 text-gray-400">
-              <User className="h-4 w-4" />
-            </div>
-          )}
-        </div>
+        <MessageRow key={m.id} message={m} onShowTrace={onShowTrace} />
       ))}
       <div ref={bottomRef} />
     </div>
