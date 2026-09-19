@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.shared.config import get_settings
 from app.shared.database import init_db
 from app.shared.exceptions import register_exception_handlers
+from app.shared.secrets_store import ensure_secrets
 
 
 class SPAStaticFiles(StaticFiles):
@@ -27,6 +28,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # 启动阶段即完成密钥解析/生成，避免首个请求时才暴露配置问题
+    ensure_secrets()
     await init_db()
     yield
 

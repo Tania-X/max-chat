@@ -53,14 +53,23 @@ async def extract_and_store(user_id: str, session_id: str, user_msg: str, assist
     try:
         import litellm
 
-        resp = await litellm.acompletion(
-            model=settings.extractor_model
+        from app.agent_runtime.infrastructure.model_factory import operator_fallback_key
+
+        extractor_model = (
+            settings.extractor_model
             if "/" in settings.extractor_model
-            else f"gemini/{settings.extractor_model}",
+            else f"gemini/{settings.extractor_model}"
+        )
+        # 显式传 Key：不再依赖被其他请求改写过的进程级环境变量
+        api_key = operator_fallback_key(extractor_model.split("/", 1)[0])
+        call_kwargs = {"api_key": api_key} if api_key else {}
+        resp = await litellm.acompletion(
+            model=extractor_model,
             messages=[
                 {"role": "user", "content": EXTRACT_PROMPT.format(user_msg=user_msg[:2000], assistant_msg=assistant_msg[:2000])}
             ],
             max_tokens=500,
+            **call_kwargs,
         )
         text = resp.choices[0].message.content or ""
         match = re.search(r"\{.*\}", text, re.DOTALL)

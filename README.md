@@ -12,7 +12,7 @@
 | 记忆与画像 | 对话后自动抽取事实 / 偏好，注入后续对话上下文，支持查看 / 编辑 / 删除 |
 | 插件 | `backend/plugins/` 目录约定式扫描，启停开关 + JSON 配置 + 热加载 |
 | Skill | `backend/skills/` 指令模板技能，启停 + 配置 + 热加载 |
-| MCP | 作为 MCP Client 接入外部 server（stdio / sse），工具自动发现注入，失败降级 |
+| MCP | 作为 MCP Client 接入外部 server（stdio / sse），工具自动发现注入，失败降级；stdio 默认关闭，需显式开启 |
 | 可观测性 | 每条回复记录 TTFT、tok/s、prompt/completion tokens、成本折算；Trace 瀑布图 + 用量统计图表 |
 
 ## 业务定位与扩展点
@@ -56,7 +56,7 @@ frontend/                # React 18 + Vite 5 + TS + Tailwind
 ```bash
 cp backend/.env.example backend/.env   # 编辑填入模型 Key
 docker compose up -d --build
-# 访问 http://<服务器IP>:8000
+# 访问 http://127.0.0.1:8000（默认仅绑定回环，见下方「安全默认值」）
 ```
 
 ## 启动方式
@@ -66,7 +66,7 @@ docker compose up -d --build
 ```powershell
 # 创建虚拟环境（位置随意，示例放在项目外的环境目录）
 python -m venv $env:VENV_HOME\max-chat
-$env:VENV_HOME\max-chat\Scripts\pip.exe install -r requirements.txt
+$env:VENV_HOME\max-chat\Scripts\pip.exe install -r backend\requirements.lock.txt
 cd backend
 $env:VENV_HOME\max-chat\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
@@ -74,6 +74,8 @@ $env:VENV_HOME\max-chat\Scripts\python.exe -m uvicorn app.main:app --port 8000
 首次启动自动建表（`backend/data/app.db`）。
 
 **配置模型 Key**：编辑 `backend/.env`，填入 `GOOGLE_API_KEY`（Gemini 兜底模型 + 记忆抽取用），或启动后在「设置 → 模型配置」界面添加任意提供商的 Key（Fernet 加密存储）。
+
+**关于密钥**：`JWT_SECRET` 与 `FERNET_KEY` 留空即可——首次启动会自动生成强随机值并以 0600 权限写入 `backend/data/secrets.json`，随数据目录一起持久化；若曾使用过旧版本的公开默认值，启动时会自动替换并提示重新登录。
 
 ### 前端
 
@@ -104,7 +106,42 @@ backend/skills/my_skill/
 
 ### 接入 MCP Server
 
-设置 → MCP → 添加，stdio 填 `npx -y @modelcontextprotocol/server-filesystem <目录>`，或 sse 填远程 URL。
+设置 → MCP → 添加，sse 填远程 URL 即可；stdio 填 `npx -y @modelcontextprotocol/server-filesystem <目录>`。
+
+> stdio 传输会以本机权限拉起你填入的任意命令，等同于代码执行，因此**默认关闭**：
+> 需在 `backend/.env` 设置 `ALLOW_STDIO_MCP=true` 后才会生效（重启后生效）。
+
+## 安全默认值
+
+本项目定位为**本地优先**，默认配置按"不暴露、不弱口令"取舍：
+
+| 项 | 默认行为 |
+|---|---|
+| 监听地址 | `docker compose` 仅绑定 `127.0.0.1:8000`，不暴露到局域网 |
+| JWT 密钥 | 无公开默认值；未配置则自动生成并持久化到 `data/secrets.json` |
+| JWT 算法 | 仅允许 HS256/HS384/HS512，配置其他值会在启动时直接报错 |
+| API Key 存储 | 始终经 Fernet 加密后入库（密钥自动生成，不存在明文降级） |
+| 模型凭据传递 | 按请求显式传入，不写入进程环境变量，用户之间不会串用 |
+| base_url | 拒绝非 http(s) 与链路本地/云元数据地址（SSRF 防护） |
+| stdio MCP | 默认关闭，需 `ALLOW_STDIO_MCP=true` 显式开启 |
+
+如需对外提供服务（局域网/公网），请至少：改为 `"8000:8000"` 暴露端口、在 `.env` 中显式设置 `JWT_SECRET`、并确认是否真的需要开放注册与 stdio MCP。
+
+## 开发与测试
+
+```bash
+pip install -r backend/requirements.lock.txt -r backend/requirements-dev.txt
+cd backend && python -m pytest -q            # 后端测试
+python backend/scripts/check_requirements_lock.py   # 依赖锁文件一致性
+```
+
+CI 门禁：后端测试、`compileall`、`.env.example` 新鲜度、依赖锁一致性、前端 lint + 构建、gitleaks、commit-lint。
+
+改动直接依赖后需同步重新生成锁文件：
+
+```bash
+pip install -r backend/requirements.txt && pip freeze --exclude-editable > backend/requirements.lock.txt
+```
 
 ## 可观测性说明
 

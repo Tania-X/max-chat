@@ -42,6 +42,10 @@ class SqlAlchemyMemoryRepository(MemoryRepository):
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_entity(r) for r in rows]
 
+    async def get(self, memory_id: str) -> Memory | None:
+        orm = await self.session.get(MemoryORM, memory_id)
+        return _to_entity(orm) if orm else None
+
     async def save(self, memory: Memory) -> Memory:
         self.session.add(
             MemoryORM(
@@ -56,8 +60,10 @@ class SqlAlchemyMemoryRepository(MemoryRepository):
         await self.session.commit()
         return memory
 
-    async def delete(self, memory_id: str) -> None:
-        await self.session.execute(delete(MemoryORM).where(MemoryORM.id == memory_id))
+    async def delete(self, user_id: str, memory_id: str) -> None:
+        await self.session.execute(
+            delete(MemoryORM).where(MemoryORM.id == memory_id, MemoryORM.user_id == user_id)
+        )
         await self.session.commit()
 
     async def get_profile(self, user_id: str) -> UserProfile:

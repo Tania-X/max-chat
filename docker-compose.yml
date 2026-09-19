@@ -4,7 +4,9 @@ services:
     image: max-chat:latest
     container_name: max-chat
     ports:
-      - "8000:8000"
+      # 默认仅绑定回环，避免把未加固的服务暴露到局域网/公网。
+      # 确需对外提供服务时改为 "8000:8000"，并同时配置 JWT_SECRET 与访问控制。
+      - "127.0.0.1:8000:8000"
     env_file:
       - backend/.env
     volumes:
