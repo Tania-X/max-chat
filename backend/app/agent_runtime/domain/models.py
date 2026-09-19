@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.shared.clock import utcnow
+
 
 @dataclass
 class ModelConfig:
@@ -12,4 +14,4 @@ class ModelConfig:
     base_url: str = ""
     label: str = ""
     is_default: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)

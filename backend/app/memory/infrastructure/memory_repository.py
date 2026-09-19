@@ -1,12 +1,11 @@
 import json
-from datetime import datetime
-
 from sqlalchemy import delete, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.memory.domain.models import Memory, UserProfile
 from app.memory.domain.repository import MemoryRepository
 from app.memory.infrastructure.models import MemoryORM, UserProfileORM
+from app.shared.clock import utcnow
 
 
 def _to_entity(orm: MemoryORM) -> Memory:
@@ -77,7 +76,7 @@ class SqlAlchemyMemoryRepository(MemoryRepository):
         payload = json.dumps(profile.data, ensure_ascii=False)
         if orm:
             orm.data = payload
-            orm.updated_at = datetime.utcnow()
+            orm.updated_at = utcnow()
         else:
             self.session.add(UserProfileORM(user_id=profile.user_id, data=payload))
         await self.session.commit()
