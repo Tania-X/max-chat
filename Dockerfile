@@ -14,8 +14,9 @@ ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
     PIP_NO_CACHE_DIR=1 \
     PYTHONUNBUFFERED=1
 
-COPY backend/requirements.txt ./
-RUN pip install -r requirements.txt
+COPY backend/requirements.txt backend/requirements.lock.txt ./
+# 按锁文件安装，保证构建可复现（requirements.txt 仅声明直接依赖）
+RUN pip install -r requirements.lock.txt
 
 COPY backend/ ./
 COPY --from=frontend /build/dist ./static

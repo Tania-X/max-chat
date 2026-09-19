@@ -1,14 +1,20 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
-sqlalchemy[asyncio]>=2.0.30
-aiosqlite>=0.20.0
-pydantic>=2.7.0
-pydantic-settings>=2.3.0
-python-jose[cryptography]>=3.3.0
-bcrypt>=4.1.0
-cryptography>=42.0.0
-sse-starlette>=2.1.0
-python-dotenv>=1.0.0
-httpx>=0.27.0
-google-adk>=1.0.0
-litellm>=1.60.0
+# 直接依赖（人工维护，精确锁定）。
+# 传递依赖见 requirements.lock.txt；改动本文件后需同步重新生成锁文件：
+#   pip install -r backend/requirements.txt && pip freeze > backend/requirements.lock.txt
+# CI 会校验两者是否一致（scripts/check_requirements_lock.py）。
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+sqlalchemy[asyncio]==2.0.54
+aiosqlite==0.22.1
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-jose[cryptography]==3.5.0
+bcrypt==5.0.0
+cryptography==50.0.1
+sse-starlette==3.4.11
+python-dotenv==1.2.3
+httpx==0.28.1
+google-adk==2.9.2
+litellm==1.101.0
+# stdio MCP server 的客户端实现；缺失会导致 MCP 能力静默失效
+mcp==2.2.0
