@@ -1,6 +1,6 @@
 import json
 
-from sqlalchemy import delete, desc, select
+from sqlalchemy import delete, desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.conversation.domain.models import ChatSession, Message
@@ -88,6 +88,12 @@ class SqlAlchemySessionRepository(SessionRepository):
         )
         await self.session.commit()
         return message
+
+    async def set_message_trace_id(self, message_id: str, trace_id: str) -> None:
+        await self.session.execute(
+            update(MessageORM).where(MessageORM.id == message_id).values(trace_id=trace_id)
+        )
+        await self.session.commit()
 
     async def list_messages(self, session_id: str, limit: int | None = None) -> list[Message]:
         stmt = select(MessageORM).where(MessageORM.session_id == session_id)
