@@ -55,30 +55,34 @@ export default function Chat() {
       setMessages(list.map((m) => (m.id === assistantMsg.id ? { ...m, ...patch } : m)))
     }
 
-    await streamChat(sessionId, text, {
-      onChunk: (delta) => {
-        const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
-        patchAssistant({ content: (m?.content || '') + delta })
-      },
-      onToolEvent: (ev) => {
-        const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
-        patchAssistant({ tool_events: [...(m?.tool_events || []), ev as unknown as ToolEvent] })
-      },
-      onDone: (stats) => {
-        patchAssistant({ streaming: false, stats: stats as unknown as MessageStats })
-        loadSessions()
-      },
-      onError: (message) => {
-        const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
-        patchAssistant({
-          streaming: false,
-          content: (m?.content || '') + `\n\n> ⚠️ 出错：${message}`,
-        })
-      },
-    }, controller.signal)
-
-    setGenerating(false)
-    abortRef.current = null
+    try {
+      await streamChat(sessionId, text, {
+        onChunk: (delta) => {
+          const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
+          patchAssistant({ content: (m?.content || '') + delta })
+        },
+        onToolEvent: (ev) => {
+          const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
+          patchAssistant({ tool_events: [...(m?.tool_events || []), ev as unknown as ToolEvent] })
+        },
+        onDone: (stats) => {
+          patchAssistant({ streaming: false, stats: stats as unknown as MessageStats })
+          loadSessions().catch((e) => console.error('刷新会话列表失败', e))
+        },
+        onError: (message) => {
+          const m = useChat.getState().messages.find((x) => x.id === assistantMsg.id)
+          patchAssistant({
+            streaming: false,
+            content: (m?.content || '') + `\n\n> ⚠️ 出错：${message}`,
+          })
+        },
+      }, controller.signal)
+    } finally {
+      // 无论正常结束、报错还是被中断，都不能把"正在生成"永久挂住
+      patchAssistant({ streaming: false })
+      setGenerating(false)
+      if (abortRef.current === controller) abortRef.current = null
+    }
   }
 
   const stop = () => {
