@@ -13,12 +13,29 @@ const COLORS = ['#6366F1', '#818CF8', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
 export default function Usage() {
   const [days, setDays] = useState(30)
   const [data, setData] = useState<UsageSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
+    let cancelled = false
+    setLoading(true)
     apiFetch<UsageSummary>(`/api/usage/summary?days=${days}`)
-      .then(setData)
-      .catch((e) => console.error(e))
+      .then((result) => {
+        if (cancelled) return // 快速切换区间时丢弃过期响应
+        setData(result)
+        setError('')
+      })
+      .catch((e) => {
+        if (cancelled) return
+        setError(e instanceof Error ? e.message : '加载失败')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [days])
 
   const cards = data
@@ -54,7 +71,12 @@ export default function Usage() {
 
         <h1 className="mb-6 text-xl font-semibold text-gray-100">用量与成本观测</h1>
 
-        {!data && <p className="text-sm text-gray-500">加载中…</p>}
+        {error && (
+          <p role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            加载用量数据失败：{error}
+          </p>
+        )}
+        {loading && !data && <p className="text-sm text-gray-500">加载中…</p>}
         {data && (
           <>
             <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-5">

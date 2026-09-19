@@ -12,7 +12,13 @@ export default function Sidebar() {
   const [editTitle, setEditTitle] = useState('')
 
   const commitRename = async (id: string) => {
-    if (editTitle.trim()) await renameSession(id, editTitle.trim())
+    if (editTitle.trim() && editTitle.trim() !== sessions.find((s) => s.id === id)?.title) {
+      try {
+        await renameSession(id, editTitle.trim())
+      } catch (e) {
+        console.error('重命名失败', e)
+      }
+    }
     setEditingId(null)
   }
 
@@ -64,9 +70,12 @@ export default function Sidebar() {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                deleteSession(s.id)
+                if (window.confirm(`删除会话「${s.title}」？该会话的消息将一并删除。`)) {
+                  deleteSession(s.id).catch((err) => console.error('删除会话失败', err))
+                }
               }}
-              className="cursor-pointer opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-red-400"
+              aria-label={`删除会话 ${s.title}`}
+              className="cursor-pointer opacity-0 transition group-hover:opacity-60 focus-visible:opacity-100 hover:!opacity-100 hover:text-red-400"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

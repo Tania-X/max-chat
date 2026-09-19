@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { streamChat } from '../api/client'
 import Composer from '../components/Composer'
@@ -16,6 +16,26 @@ export default function Chat() {
   } = useChat()
   const [traceId, setTraceId] = useState<string | null>(null)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
+
+  // 下拉菜单：Esc 与点击外部都要能关闭
+  useEffect(() => {
+    if (!modelMenuOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModelMenuOpen(false)
+    }
+    const onMouseDown = (e: MouseEvent) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setModelMenuOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [modelMenuOpen])
 
   useEffect(() => {
     loadSessions()
@@ -105,9 +125,12 @@ export default function Chat() {
           <h1 className="truncate text-sm font-medium text-gray-200">
             {currentSession?.title || '新会话'}
           </h1>
-          <div className="relative">
+          <div className="relative" ref={modelMenuRef}>
             <button
               onClick={() => setModelMenuOpen(!modelMenuOpen)}
+              aria-haspopup="menu"
+              aria-expanded={modelMenuOpen}
+              aria-label="切换模型"
               className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-700 bg-surface-800 px-3 py-1.5 text-xs text-gray-300 transition hover:border-primary/50"
             >
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
