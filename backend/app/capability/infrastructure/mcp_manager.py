@@ -19,13 +19,17 @@ async def load_mcp_tools(name: str, config: dict) -> list:
         return []
 
     try:
-        from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+        # ADK 2.x 起更名为 McpToolset，旧名 MCPToolset 仍可用但会告警
+        from google.adk.tools.mcp_tool.mcp_toolset import McpToolset as MCPToolset
     except ImportError:
         try:
-            from google.adk.tools.mcp_tool import MCPToolset
+            from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
         except ImportError:
-            logger.warning("ADK MCPToolset unavailable")
-            return []
+            try:
+                from google.adk.tools.mcp_tool import MCPToolset
+            except ImportError:
+                logger.warning("ADK MCPToolset unavailable")
+                return []
 
     try:
         if transport == "stdio":
