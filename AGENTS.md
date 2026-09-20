@@ -18,9 +18,9 @@ Local-first, secure-by-default. Do not reintroduce: public default secrets, plai
 - Contracts: REST schemas, SSE event shapes, error format `{detail, code}` synced both sides.
 - Env: new keys → `config.py` (Field description) only; regenerate `.env.example` via `python -m app.shared.env_example` (CI enforces). Compose injects whole `.env` — no per-key edits.
 - Deps: direct deps pinned in `requirements.txt`; regenerate `requirements.lock.txt` when they change (CI enforces consistency).
-- Tests: security-relevant changes need a regression test in `backend/tests/` that fails before the fix.
+- Tests: every bug fix needs a regression test that fails before the fix — read `docs/TESTING.md` before writing or changing tests.
 - DB: breaking ORM changes need migration notes.
-- CI (backend tests, backend compile, frontend lint + build, gitleaks, commit-lint) must pass.
+- CI (backend tests, frontend test + lint + build, backend compile, gitleaks, commit-lint) must pass.
 
 ## Docs
 Examples use placeholders (`<PROJECT_ROOT>`) or env vars (`$env:VENV_HOME`) — never real paths or personal info.
