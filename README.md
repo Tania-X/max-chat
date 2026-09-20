@@ -150,3 +150,4 @@ pip install -r backend/requirements.txt && pip freeze --exclude-editable > backe
 - 每次 LLM 调用落库 `traces` 表：模型、token 用量、TTFT、总耗时、tok/s、成本（内置定价表折算）、工具调用 span
 - 聊天页每条 AI 回复底部有点击可展开的 **Trace 面板**（时间线瀑布图 + 工具调用明细）
 - 「用量」页提供按天 / 按模型的 token 与成本图表、平均 TTFT 与生成速率
+- 「设置 → 记忆」页展示**记忆抽取健康度**（近 30 天）：抽取次数、失败率、平均耗时与累计成本；失败按原因分类（未返回 JSON / 结构不符 / 调用失败 / 未配置 Key），可展开查看最近失败详情与模型原始输出

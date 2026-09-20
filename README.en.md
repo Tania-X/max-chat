@@ -150,3 +150,4 @@ pip install -r backend/requirements.txt && pip freeze --exclude-editable > backe
 - Every LLM call is stored in the `traces` table: model, token usage, TTFT, total duration, tok/s, cost (from the built-in pricing table) and tool-call spans
 - Each AI reply in the chat page has a collapsible **Trace panel** at the bottom (timeline waterfall + tool-call detail)
 - The *Usage* page charts tokens and cost by day / by model, with average TTFT and generation rate
+- *Settings → Memory* shows **memory-extraction health** over the last 30 days: attempts, failure rate, average latency and cumulative cost, with failures broken down by cause (no JSON / bad schema / call failed / no key configured) and the most recent failures expandable down to the model's raw output
