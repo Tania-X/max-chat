@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Brain, Trash2, UserCog } from 'lucide-react'
+import { Activity, Brain, Trash2, UserCog } from 'lucide-react'
 import { apiFetch } from '../../api/client'
-import type { MemoryItem } from '../../types'
+import type { ExtractionStats, MemoryItem } from '../../types'
 
 const CATEGORY_LABEL: Record<string, string> = {
   preference: '偏好',
   fact: '事实',
   habit: '习惯',
   general: '通用',
+}
+
+// 抽取失败原因：区分"没配 Key"和"模型不听话"，排查方向完全不同
+const OUTCOME_LABEL: Record<string, string> = {
+  ok: '成功',
+  no_json: '模型未返回 JSON',
+  bad_schema: 'JSON 结构不符',
+  call_failed: '调用失败',
+  skipped_no_key: '未配置抽取模型 Key',
 }
 
 /**
@@ -62,6 +71,7 @@ function ProfileRow({
 export default function MemoryTab() {
   const [memories, setMemories] = useState<MemoryItem[]>([])
   const [profile, setProfile] = useState<Record<string, string>>({})
+  const [stats, setStats] = useState<ExtractionStats | null>(null)
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
   const [loading, setLoading] = useState(true)
@@ -69,12 +79,14 @@ export default function MemoryTab() {
 
   const load = async () => {
     try {
-      const [memoryList, profileResp] = await Promise.all([
+      const [memoryList, profileResp, extraction] = await Promise.all([
         apiFetch<MemoryItem[]>('/api/memory'),
         apiFetch<{ data: Record<string, string> }>('/api/profile'),
+        apiFetch<ExtractionStats>('/api/memory/extraction/stats?days=30'),
       ])
       setMemories(memoryList)
       setProfile(profileResp.data)
+      setStats(extraction)
       setError('')
     } catch (e) {
       setError(e instanceof Error ? e.message : '加载失败')
@@ -200,6 +212,81 @@ export default function MemoryTab() {
           )}
         </div>
       </section>
+
+      {stats && stats.total > 0 && (
+        <section>
+          <h3 className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-200">
+            <Activity className="h-4 w-4 text-primary-light" /> 抽取健康度（近 {stats.days} 天）
+          </h3>
+          <p className="mb-3 text-xs text-gray-500">
+            抽取在后台异步执行，这里可以看到它到底有没有在工作、失败时是什么原因。
+          </p>
+
+          <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { label: '抽取次数', value: String(stats.total) },
+              {
+                label: '失败率',
+                value: `${(stats.failure_rate * 100).toFixed(1)}%`,
+                warn: stats.failure_rate > 0,
+              },
+              { label: '平均耗时', value: `${stats.avg_latency_ms} ms` },
+              {
+                label: '累计成本',
+                value: `$${stats.total_cost_usd.toFixed(6)}`,
+              },
+            ].map(({ label, value, warn }) => (
+              <div key={label} className="glass rounded-xl p-3">
+                <div className={`text-base font-semibold ${warn ? 'text-amber-400' : 'text-gray-100'}`}>
+                  {value}
+                </div>
+                <div className="mt-0.5 text-[11px] text-gray-500">{label}</div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mb-3 text-xs text-gray-500">
+            写入 {stats.memories_written} 条，跳过重复 {stats.duplicates_skipped} 条
+          </p>
+
+          {Object.keys(stats.by_outcome).some((o) => o !== 'ok') && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {Object.entries(stats.by_outcome)
+                .filter(([outcome]) => outcome !== 'ok')
+                .map(([outcome, count]) => (
+                  <span
+                    key={outcome}
+                    className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-300"
+                  >
+                    {OUTCOME_LABEL[outcome] || outcome} × {count}
+                  </span>
+                ))}
+            </div>
+          )}
+
+          {stats.recent_failures.length > 0 && (
+            <details className="rounded-lg border border-gray-800 bg-surface-800/60 px-3 py-2">
+              <summary className="cursor-pointer text-xs text-gray-400">
+                最近 {stats.recent_failures.length} 次失败详情
+              </summary>
+              <ul className="mt-2 space-y-2">
+                {stats.recent_failures.map((f, i) => (
+                  <li key={i} className="text-[11px] text-gray-500">
+                    <span className="text-amber-300/90">{OUTCOME_LABEL[f.outcome] || f.outcome}</span>
+                    <span className="ml-2">{f.created_at.replace('T', ' ').slice(0, 19)}</span>
+                    <div className="mt-0.5 break-all text-gray-400">{f.error}</div>
+                    {f.raw_snippet && (
+                      <pre className="mt-1 max-h-24 overflow-auto rounded bg-surface-900 px-2 py-1 text-[10px] text-gray-500">
+                        {f.raw_snippet}
+                      </pre>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </section>
+      )}
     </div>
   )
 }

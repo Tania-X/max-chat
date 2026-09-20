@@ -66,6 +66,27 @@ export interface MemoryItem {
   created_at: string
 }
 
+export interface ExtractionFailure {
+  outcome: string
+  error: string
+  raw_snippet: string
+  created_at: string
+}
+
+export interface ExtractionStats {
+  days: number
+  total: number
+  ok: number
+  failed: number
+  failure_rate: number
+  by_outcome: Record<string, number>
+  avg_latency_ms: number
+  total_cost_usd: number
+  memories_written: number
+  duplicates_skipped: number
+  recent_failures: ExtractionFailure[]
+}
+
 export interface Trace {
   id: string
   session_id: string
