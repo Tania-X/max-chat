@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.memory.domain.models import Memory, UserProfile
+from app.memory.domain.models import ExtractionRun, ExtractionStats, Memory, UserProfile
 
 
 class MemoryRepository(ABC):
@@ -25,3 +25,16 @@ class MemoryRepository(ABC):
 
     @abstractmethod
     async def save_profile(self, profile: UserProfile) -> UserProfile: ...
+
+
+class ExtractionRunRepository(ABC):
+    """记忆抽取尝试的记录与聚合，用于暴露成功率与失败原因。"""
+
+    @abstractmethod
+    async def save(self, run: ExtractionRun) -> ExtractionRun: ...
+
+    @abstractmethod
+    async def stats(self, user_id: str, days: int = 30) -> ExtractionStats: ...
+
+    @abstractmethod
+    async def recent_failures(self, user_id: str, limit: int = 5) -> list[ExtractionRun]: ...
