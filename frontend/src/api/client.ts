@@ -4,6 +4,44 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY)
 export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token)
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
 
+/** 带状态码的 API 错误：调用方需要区分"未登录"与"网络故障"。 */
+export class ApiError extends Error {
+  status: number
+  code?: string
+
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
+export const isApiError = (err: unknown): err is ApiError => err instanceof ApiError
+
+type UnauthorizedHandler = () => void
+let onUnauthorized: UnauthorizedHandler | null = null
+
+/** 注册全局 401 处理（清理登录态并跳转），由 store 在模块初始化时注入。 */
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
+  onUnauthorized = handler
+}
+
+export function notifyUnauthorized() {
+  onUnauthorized?.()
+}
+
+/** 统一解析错误体：后端契约是 {detail, code}，422 的 detail 可能是数组。 */
+function errorMessage(body: unknown, fallback: string): string {
+  const detail = (body as { detail?: unknown })?.detail
+  if (typeof detail === 'string' && detail) return detail
+  if (Array.isArray(detail)) {
+    const first = detail[0] as { msg?: string } | undefined
+    if (first?.msg) return first.msg
+  }
+  return fallback
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
@@ -14,10 +52,16 @@ export async function apiFetch<T = unknown>(
   }
   const token = getToken()
   if (token) headers.Authorization = `Bearer ${token}`
+
   const resp = await fetch(path, { ...options, headers })
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({ detail: resp.statusText }))
-    throw new Error(body.detail || `请求失败 (${resp.status})`)
+    if (resp.status === 401) notifyUnauthorized()
+    throw new ApiError(
+      errorMessage(body, `请求失败 (${resp.status})`),
+      resp.status,
+      (body as { code?: string })?.code,
+    )
   }
   return resp.json()
 }
@@ -65,7 +109,8 @@ export async function streamChat(
 
   if (!resp.ok || !resp.body) {
     const body = await resp.json().catch(() => ({ detail: resp.statusText }))
-    callbacks.onError(body.detail || `请求失败 (${resp.status})`)
+    if (resp.status === 401) notifyUnauthorized()
+    callbacks.onError(errorMessage(body, `请求失败 (${resp.status})`))
     return
   }
 

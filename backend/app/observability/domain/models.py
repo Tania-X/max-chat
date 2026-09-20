@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.shared.clock import utcnow
+
 
 @dataclass
 class ToolSpan:
@@ -26,4 +28,4 @@ class Trace:
     cost_usd: float = 0.0
     tool_spans: list[dict] = field(default_factory=list)
     error: str = ""
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)

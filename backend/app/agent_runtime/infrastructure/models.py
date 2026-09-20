@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.database import Base
+from app.shared.clock import utcnow
 
 
 class ModelConfigORM(Base):
@@ -17,4 +18,4 @@ class ModelConfigORM(Base):
     base_url: Mapped[str] = mapped_column(String(256), default="")
     label: Mapped[str] = mapped_column(String(64), default="")
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

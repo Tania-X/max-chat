@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.database import Base
+from app.shared.clock import utcnow
 
 
 class TraceORM(Base):
@@ -24,4 +25,4 @@ class TraceORM(Base):
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     tool_spans: Mapped[str] = mapped_column(Text, default="[]")
     error: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

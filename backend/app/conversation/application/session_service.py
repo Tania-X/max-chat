@@ -1,9 +1,8 @@
 import uuid
-from datetime import datetime
-
 from app.conversation.domain.models import ChatSession, Message
 from app.conversation.domain.repository import SessionRepository
 from app.shared.exceptions import ForbiddenError, NotFoundError
+from app.shared.clock import utcnow
 
 
 class SessionService:
@@ -28,13 +27,13 @@ class SessionService:
     async def rename(self, user_id: str, session_id: str, title: str) -> ChatSession:
         session = await self.get_owned(user_id, session_id)
         session.title = title.strip() or session.title
-        session.updated_at = datetime.utcnow()
+        session.updated_at = utcnow()
         return await self.repo.save(session)
 
     async def set_model(self, user_id: str, session_id: str, model_config_id: str | None) -> ChatSession:
         session = await self.get_owned(user_id, session_id)
         session.model_config_id = model_config_id
-        session.updated_at = datetime.utcnow()
+        session.updated_at = utcnow()
         return await self.repo.save(session)
 
     async def delete(self, user_id: str, session_id: str) -> None:
@@ -46,5 +45,5 @@ class SessionService:
         return await self.repo.list_messages(session_id)
 
     async def touch(self, session: ChatSession) -> None:
-        session.updated_at = datetime.utcnow()
+        session.updated_at = utcnow()
         await self.repo.save(session)

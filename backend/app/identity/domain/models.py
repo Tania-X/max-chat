@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.shared.clock import utcnow
+
 
 @dataclass
 class User:
@@ -8,4 +10,4 @@ class User:
     username: str
     password_hash: str
     display_name: str = ""
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)
