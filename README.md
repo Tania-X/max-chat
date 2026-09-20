@@ -1,5 +1,7 @@
 # MAX Chat — 类 ChatGPT 的全栈 AI 助手
 
+**简体中文** | [English](README.en.md)
+
 基于 **FastAPI + Google ADK + React** 的多用户 AI 对话应用，采用 **DDD 分层架构**，具备多模型切换、Session 隔离、长期记忆、用户画像、插件 / Skill / MCP 工具框架与全链路可观测性。
 
 ## 功能一览
@@ -135,7 +137,7 @@ cd backend && python -m pytest -q            # 后端测试
 python backend/scripts/check_requirements_lock.py   # 依赖锁文件一致性
 ```
 
-CI 门禁：后端测试、`compileall`、`.env.example` 新鲜度、依赖锁一致性、前端 lint + 构建、gitleaks、commit-lint。
+CI 门禁与测试规范详见 [docs/TESTING.md](docs/TESTING.md)；注释规范见 [docs/COMMENTS.md](docs/COMMENTS.md)；贡献流程见 [AGENTS.md](AGENTS.md)。
 
 改动直接依赖后需同步重新生成锁文件：
 
