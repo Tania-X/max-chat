@@ -4,7 +4,9 @@
 
 ## The test
 
-A comment must say something the code cannot: a constraint, a failure mode, an external contract, or a rejected alternative.
+A comment must say something the code cannot: a constraint, a failure mode, an external contract, or why the obvious alternative would break.
+
+**Explain why the code is the way it is — not how it came to be that way.**
 
 **If deleting it loses no information, delete it.**
 
@@ -25,7 +27,11 @@ On non-obvious core paths — the places where getting it wrong is silent rather
 ## What not to write
 
 - Restating the signature — `# get user list` above `get_users()`.
-- Change narration — `# fixed X`, `# used to be Y`. That belongs in the commit message.
+- Change narration. The diff is already in the commit message, so a comment must not retell it:
+  - ✗ `# 原来是轮询，改成 SSE 后不再丢事件` — explains why A became B.
+  - ✓ `# 客户端断开时请求会被取消，所以这里用独立会话` — explains why B has to be this way.
+
+  The past may still be named when it **constrains the present** — `# 历史数据是明文入库的，解密失败时按明文兼容`. State that as a live constraint, not as a story about the change.
 - Ownerless TODOs. Link an issue or leave it out.
 - Framework or library tutorials.
 
